@@ -69,6 +69,8 @@
         </svg>
       </button>
 
+      <el-button @click="handleTryRun" size="small" type="primary">试运行</el-button>
+
       <!-- <button class="canvas-toolbar__button" type="button" title="画布预览">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="M4 5h16v12H9l-4 3v-3H4V5Z" />
@@ -88,6 +90,13 @@
       ref="myDrawer"
       @changeProperties="changeProperties"
     ></my-drawer>
+
+    <try-run-edit
+      @tryRun="tryRun"
+      :workflowId="workflowId"
+      ref="tryRunRef"
+    >
+    </try-run-edit>
   </div>
 </template>
 
@@ -107,12 +116,17 @@ import { createWorkflowNode, DEFAULT_NODE_SIZE } from './enum/node-factory.js'
 import { validateEdge } from './scripts/edgeRules.js'
 import customEdge from './scripts/custom-edge.js'
 import { MiniMap, Snapshot } from '@logicflow/extension'
+import TryRunEdit from './TryRunEdit.vue'
+import httpNode from './http-node/http-node.js'
+import ifElseNode from './if-else-node/if-else-node.js'
+// import { saveNodeData } from '../../api/api.js'
 
 export default {
   name: 'WorkFlowIndex',
   components: {
     MyDrawer,
-    dragClickList
+    dragClickList,
+    TryRunEdit
   },
   props: {},
   data () {
@@ -121,6 +135,7 @@ export default {
       renderData: null,
       clickNodeIdList: [],
       workflowId: this.$route.params.id,
+      name: this.$route.params.name,
       nodeTypeList: { 'input-node': [], 'model-node': [] },
       ignoreNextNodeClick: false,
       sizeOptions: [
@@ -143,7 +158,8 @@ export default {
 
       ],
       currentSize: 1,
-      isShowMiniMap: false
+      isShowMiniMap: false,
+      version: null
     }
   },
   watch: {},
@@ -154,9 +170,11 @@ export default {
       instance.register(EndNode)
       instance.register(inputNode)
       instance.register(modelNode)
+      instance.register(httpNode)
+      instance.register(ifElseNode)
     },
-    initRenderData (instance) {
-      this.getRenderData()
+    async initRenderData (instance) {
+      await this.getRenderData()
       if (this.renderData) {
         instance.render(this.renderData)
       } else {
@@ -223,31 +241,32 @@ export default {
           edges: []
         }
         instance.render(this.renderData)
+
+        const paramData = {
+          name: this.name,
+          description: this.name,
+          graphData: this.renderData
+        }
+        this.putSaveNodeData(paramData)
       }
     },
-    getRenderData () {
-      const savedData = localStorage.getItem(`workflow${this.workflowId}`)
-
-      if (!savedData) {
-        this.renderData = null
-        return
-      }
-
+    async getRenderData () {
       try {
-        const graphData = JSON.parse(savedData)
-        if (!graphData || !Array.isArray(graphData.nodes)) {
+        const response = await this.$api.getNodeData(this.workflowId)
+
+        this.renderData = response.data.graphData
+        this.version = response.data.version
+
+        console.log('读取到的画布：', this.renderData)
+        console.log('当前版本：', this.version)
+      } catch (error) {
+        if (error.response?.status === 404) {
           this.renderData = null
+          this.version = null
           return
         }
 
-        const nodes = graphData.nodes
-        const hasInvalidNode = nodes.some(node => !node || !node.type)
-
-        this.renderData = hasInvalidNode
-          ? null
-          : { ...graphData, nodes, edges: Array.isArray(graphData.edges) ? graphData.edges : [] }
-      } catch (error) {
-        this.renderData = null
+        throw error
       }
     },
     registerEvent (instance) {
@@ -342,11 +361,13 @@ export default {
       const node = this.lf.getNodeModelById(id)
 
       if (!node) return
-      node.setProperties(Array.isArray(data) ? { data } : data)
 
       // 上面的setPtoperties只能改变model上的数据，
       // 下面的这个事件才能改变view层的数据
+      node.setProperties(Array.isArray(data) ? { data } : data)
       this.lf.graphModel.eventCenter.emit('save', { data, id, lf: this.lf })
+
+      this.saveGraphData()
     },
 
     openDragClickList () {
@@ -408,7 +429,9 @@ export default {
     getNodeIndex (newType) {
       const titleMap = {
         'input-node': '输入',
-        'model-node': '大模型'
+        'model-node': '大模型',
+        'http-node': 'http插件',
+        'if-else-node': 'if-else'
       }
 
       if (!titleMap[newType]) return
@@ -447,11 +470,22 @@ export default {
       }
     },
 
-    saveGraphData () {
+    async saveGraphData () {
       if (!this.lf) return
 
+      console.log('param vresion:', this.version)
+
       const saveData = this.lf.getGraphData()
-      localStorage.setItem(`workflow${this.workflowId}`, JSON.stringify(saveData))
+      const paramData = {
+        name: this.name,
+        description: this.name,
+        graphData: saveData,
+        ...(this.version !== null
+          ? { version: this.version }
+          : {})
+      }
+      await this.putSaveNodeData(paramData)
+      // localStorage.setItem(`workflow${this.workflowId}`, JSON.stringify(saveData))
     },
 
     handleZoom (newval) {
@@ -498,11 +532,40 @@ export default {
         message: '导出成功',
         type: 'success'
       })
+    },
+
+    handleTryRun () {
+      this.$refs.tryRunRef.handleOpen()
+    },
+
+    async putSaveNodeData (paramData) {
+      const data = await this.$api.saveNodeData(this.workflowId, paramData)
+      console.log('响应data:', data)
+      this.version = data.data?.version
+      console.log('this.verison:', this.version)
+    },
+
+    async tryRun (runtimeData) {
+      try {
+        this.$store.commit('getIsShowLoading', true)
+        const data = await this.$api.tryRunModel(this.workflowId, runtimeData)
+        this.$store.commit('getRunTimeData', data)
+        console.log('model run data:', data)
+      } catch (error) {
+        console.log(error)
+      } finally {
+        this.$store.commit('getIsShowLoading', false)
+      }
     }
+
+    // async getGetNodeData () {
+    //   const data = await this.$api.getNodeData(this.workflowId)
+    //   console.log('响应get data:', data)
+    // }
 
   },
   created () {},
-  mounted () {
+  async mounted () {
     // 初始化
     this.lf = new LogicFlow({
       container: this.$refs.container,
@@ -612,12 +675,14 @@ export default {
     this.registerNode(this.lf)
     // 注册边
     this.lf.register(customEdge)
+    // 渲染
+    await this.initRenderData(this.lf)
     // 注册事件
     this.registerEvent(this.lf)
-    // 渲染
-    this.initRenderData(this.lf)
 
     this.$emit('getlf', this.lf)
+
+    // this.getGetNodeData()
   }
 }
 </script>

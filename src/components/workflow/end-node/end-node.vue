@@ -13,7 +13,7 @@
     <div class="end-node__content">
       <div class="end-node__row">
         <span class="end-node__label">输出</span>
-        <div v-for="item in visibleOutput" :key="item.id">
+        <div v-for="item in nodeData" :key="item.id">
           <span class="end-node__param">
             <span class="end-node__param-type">{{ item.shortLabel }}.</span>
             <span class="end-node__param-name">{{ item.name }}</span>
@@ -27,6 +27,7 @@
         <span class="end-node__value">{{ outputMode === 'text' ? '返回文本' : '返回变量' }}</span>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -46,17 +47,7 @@ export default {
     }
   },
   watch: {},
-  computed: {
-    visibleOutput () {
-      if (this.outputMode === 'variable') return this.nodeData
-
-      return [{
-        id: 'text-output',
-        shortLabel: 'Text',
-        name: this.cueWord || '文本内容'
-      }]
-    }
-  },
+  computed: {},
   methods: {},
   created () {},
   mounted () {
@@ -73,7 +64,7 @@ export default {
 <style lang="scss" scoped>
 .end-node {
   width: 100%;
-  height: 100%;
+  height: 100px;
   padding: 10px 14px;
   display: flex;
   flex-direction: column;
@@ -85,6 +76,7 @@ export default {
   font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
   cursor: default;
   transition: border-color .2s ease, box-shadow .2s ease;
+  position: relative;
 
   &:hover {
     border-color: #4f55ee;
@@ -180,6 +172,23 @@ export default {
     font-size: 12px;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .result{
+    position: absolute;
+    left: 0;
+  top: calc(100% + 8px);
+    width: 100%;
+    height: 50px;
+    background: linear-gradient(135deg, #fff 0%, #fbfbff 100%);
+    border: 1px solid #d8dceb;
+    border-radius: 9px;
+    box-shadow: 0 4px 12px rgba(52, 59, 102, .11);
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    cursor: default;
+    transition: border-color .2s ease, box-shadow .2s ease;
+    padding: 10px 14px;
+    z-index: 9999;
   }
 }
 </style>

@@ -100,6 +100,32 @@ export default {
           `,
           name: '大模型节点',
           intro: '调用模型生成处理结果'
+        },
+        {
+          id: UUID.generate(),
+          type: 'http-node',
+          html: `
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9.5 14.5 14.5 9" />
+              <path d="m7.2 17.7-1 .9a3.7 3.7 0 0 1-5.2-5.2l3.1-3.1a3.7 3.7 0 0 1 5.2 0" />
+              <path d="m16.8 6.3 1-.9a3.7 3.7 0 0 1 5.2 5.2l-3.1 3.1a3.7 3.7 0 0 1-5.2 0" />
+            </svg>
+          `,
+          name: 'http插件',
+          intro: '可以自定义http插件'
+        },
+        {
+          id: UUID.generate(),
+          type: 'if-else-node',
+          html: `
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9.5 14.5 14.5 9" />
+              <path d="m7.2 17.7-1 .9a3.7 3.7 0 0 1-5.2-5.2l3.1-3.1a3.7 3.7 0 0 1 5.2 0" />
+              <path d="m16.8 6.3 1-.9a3.7 3.7 0 0 1 5.2 5.2l-3.1 3.1a3.7 3.7 0 0 1-5.2 0" />
+            </svg>
+          `,
+          name: 'if-else',
+          intro: '添加条件判断'
         }
       ],
       dragItemType: null

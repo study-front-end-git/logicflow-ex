@@ -67,9 +67,9 @@ export default {
   data () {
     return {
       agents: [
-        { id: 1, name: '医疗小助手', description: '根据病人描述病状推断出应该就诊科室', tag: '智能体', author: 'RootUser_2107908511', updatedAt: '07-20 10:42', color: '#8297bc' },
-        { id: 2, name: '文案创作助手', description: '根据主题和语气，快速生成高质量创意文案', tag: '内容创作', author: 'RootUser_2107908511', updatedAt: '07-19 16:28', color: '#947fbc' },
-        { id: 3, name: '数据分析助手', description: '解析业务数据，发现趋势并生成分析结论', tag: '效率工具', author: 'RootUser_2107908511', updatedAt: '07-18 09:15', color: '#6d9d98' },
+        { id: 1, name: '文本总结助手', description: '根据病人描述病状推断出应该就诊科室', tag: '智能体', author: 'RootUser_2107908511', updatedAt: '07-20 10:42', color: '#8297bc' },
+        { id: 2, name: 'AI新闻预览', description: '根据主题和语气，快速生成高质量创意文案', tag: '内容创作', author: 'RootUser_2107908511', updatedAt: '07-19 16:28', color: '#947fbc' },
+        { id: 3, name: '智能翻译助手', description: '解析业务数据，发现趋势并生成分析结论', tag: '效率工具', author: 'RootUser_2107908511', updatedAt: '07-18 09:15', color: '#6d9d98' },
         { id: 4, name: '学习规划助手', description: '结合你的目标，定制清晰可行的学习计划', tag: '教育', author: 'RootUser_2107908511', updatedAt: '07-17 14:06', color: '#bd8a72' },
         { id: 5, name: '旅行规划助手', description: '一站式规划行程、景点与每日出行安排', tag: '生活', author: 'RootUser_2107908511', updatedAt: '07-16 11:30', color: '#718db0' },
         { id: 6, name: '代码审查助手', description: '定位潜在问题，给出清晰可靠的优化建议', tag: '开发工具', author: 'RootUser_2107908511', updatedAt: '07-15 18:42', color: '#7c8ba4' }

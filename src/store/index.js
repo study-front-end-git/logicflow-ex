@@ -5,7 +5,9 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    dragItemType: null
+    dragItemType: null,
+    runtimeResponseData: null,
+    isShowLoading: false
   },
   getters: {
   },
@@ -14,6 +16,12 @@ export default new Vuex.Store({
       console.log('出发了')
 
       state.dragItemType = type
+    },
+    getRunTimeData (state, data) {
+      state.runtimeResponseData = data
+    },
+    getIsShowLoading (state, bool) {
+      state.isShowLoading = bool
     }
   },
   actions: {

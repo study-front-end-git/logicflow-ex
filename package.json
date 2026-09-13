@@ -10,10 +10,15 @@
   "dependencies": {
     "@logicflow/core": "^2.2.5",
     "@logicflow/extension": "^2.3.1",
+    "axios": "^1.20.0",
+    "clipboard": "^2.0.11",
     "core-js": "^3.8.3",
     "element-ui": "^2.15.14",
+    "lodash": "^4.18.1",
     "uuidjs": "^5.1.0",
+    "vditor": "^4.0.0",
     "vue": "^2.6.14",
+    "vue-json-viewer": "^2.2.22",
     "vue-router": "^3.5.1",
     "vuex": "^3.6.2"
   },

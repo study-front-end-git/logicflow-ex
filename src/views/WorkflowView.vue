@@ -37,6 +37,8 @@ export default {
     },
     handleRename () {},
     handlePublish () {
+      // const version = Date.now()
+
       this.$refs.workflow.saveGraphData()
     },
     handleCommand (command) {

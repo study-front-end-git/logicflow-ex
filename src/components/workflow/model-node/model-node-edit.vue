@@ -84,12 +84,69 @@
         <div class="section-title"><span>提示词</span><small>定义模型的角色和任务</small></div>
         <div class="setting-card prompt-card">
           <label class="form-field form-field--full"><span>系统提示词</span><el-input v-model="form.config.systemPrompt" type="textarea" :rows="3" resize="none" placeholder="例如：你是一名专业的内容助手" /></label>
-          <label class="form-field form-field--full prompt-card__user"><span>用户提示词</span><el-input v-model="form.config.userPrompt" type="textarea" :rows="5" resize="none" placeholder="输入提示词，可引用上游节点变量" /></label>
-          <div class="variable-tip"><i class="el-icon-connection"></i><span>输入“/”可以选择上游节点变量</span></div>
+          <label class="form-field form-field--full prompt-card__user">
+            <span>用户提示词</span>
+            <el-input ref="inputRef" @input="handleUserPromptInput" v-model="form.config.userPrompt" type="textarea" :rows="5" resize="none" placeholder="输入提示词，可引用上游节点变量" />
+          </label>
+          <div v-if="showVariablePanel" class="variable-panel">
+            <div class="variable-panel__title">选择上游变量</div>
+            <div
+              class="variable-panel-item"
+              v-for="item in form.data"
+              :key="`${item.id}`"
+              @mousedown.prevent
+              @click="insertVariable(item)"
+            >
+              <!-- <span class="variable-panel-item__node">{{ item.nodeTitle }}</span> -->
+              <span class="variable-panel-item__info">
+                <strong>{{ item.name }}</strong>
+                <em>{{ item.type }}</em>
+              </span>
+            </div>
+            <div v-if="form.data.length === 0" class="variable-panel__empty">暂无可引用的上游变量</div>
+          </div>
+          <div class="variable-tip"><i class="el-icon-connection"></i><span>输入“/”可以选择输入变量</span></div>
         </div>
       </section>
 
-      <section class="editor-section editor-section--last">
+      <section class="editor-section input-section">
+        <div class="input-section__title">
+          <i class="el-icon-arrow-down"></i>
+          <span>输出</span>
+        </div>
+
+        <div class="parameter-head">
+          <span>参数名</span>
+          <span>参数类型</span>
+        </div>
+
+        <div v-for="(item,index) in form.output" :key="item.id" class="parameter-item">
+          <div class="parameter-row" style="justify-items: end;">
+            <el-input
+              v-model="item.name"
+              size="small"
+              placeholder="请输入参数名"
+            />
+
+            <el-input
+              v-model="item.type"
+              placeholder="变量类型"
+              :disabled="true"
+            />
+
+            <button class="parameter-remove" type="button" aria-label="删除参数" @click="removeOutputParam(index)">
+              <i class="el-icon-minus"></i>
+            </button>
+          </div>
+        </div>
+
+        <button @click="addOutputParam" class="parameter-add" type="button">
+          <i class="el-icon-plus"></i>
+          <span>添加</span>
+        </button>
+      </section>
+
+      <!-- <section class="editor-section editor-section--last">
         <div class="section-title"><span>生成参数</span><small>调整模型输出效果</small></div>
         <div class="setting-card model-settings">
           <div class="slider-field">
@@ -114,7 +171,7 @@
           <div><strong>{{ outputItem.name }}</strong><small>{{ form.config.outputFormat === 'json' ? '模型生成的 JSON 对象' : '模型生成的文本内容' }}</small></div>
           <span class="output-preview__type">{{ outputItem.shortLabel }}</span>
         </div>
-      </section>
+      </section> -->
     </div>
 
     <div class="editor-footer"><el-button @click="handleCancel">取消</el-button><el-button type="primary" @click="save">保存配置</el-button></div>
@@ -137,6 +194,16 @@ const createInputParameter = () => ({
   inputValue: '',
   referenceKey: [],
   referenceValue: []
+})
+
+const createOutputParameter = () => ({
+  id: UUID.generate(),
+  name: '',
+  description: '',
+  type: 'String',
+  shortLabel: 'Str',
+  required: false,
+  format: 'text'
 })
 
 export default {
@@ -168,20 +235,71 @@ export default {
     })
 
     return {
-      form
+      form,
+      showVariablePanel: false
     }
   },
   watch: {},
   computed: {
-    upperParamOptions () {
-      return (this.inComingParams || []).map(node => ({
-        value: node.nodeId,
-        label: node.title || node.nodeType,
-        children: (Array.isArray(node.output) ? node.output : []).map((item, index) => ({
-          value: item.name || item.key || index,
-          label: `${item.name || item.key || `参数${index + 1}`} (${item.type || 'String'})`
+    variables () {
+      return (this.inComingParams || []).flatMap(node => {
+        const output = Array.isArray(node.output) ? node.output : []
+
+        return output.map((item, index) => ({
+          nodeId: node.nodeId,
+          nodeType: node.nodeType,
+          nodeTitle: node.title || node.nodeType || '上游节点',
+          paramId: item.id || `${node.nodeId}-${index}`,
+          name: item.name || item.key || `参数${index + 1}`,
+          type: item.type || 'String',
+          shortLabel: item.shortLabel || 'Str',
+          referenceValue: [
+            node.nodeId,
+            item.name || item.key || index
+          ]
         }))
-      })).filter(node => node.children.length)
+      })
+    },
+    upperParamOptions () {
+      const normalizeHttpOutput = output => {
+        return (Array.isArray(output) ? output : []).map((item, index) => {
+          const value = item.value ?? item.name ?? item.key ?? index
+          const option = {
+            value,
+            label: item.label || item.name || item.key || `参数${index + 1}`
+          }
+          const children = normalizeHttpOutput(item.children)
+
+          if (children.length) option.children = children
+
+          return option
+        })
+      }
+
+      return (this.inComingParams || []).map(node => {
+        const output = Array.isArray(node.output) ? node.output : []
+
+        if (node.nodeType === 'http-node') {
+          return {
+            value: node.nodeId,
+            label: node.title || node.nodeType,
+            children: normalizeHttpOutput(output)
+          }
+        }
+
+        return {
+          value: node.nodeId,
+          label: node.title || node.nodeType,
+          children: output.map((item, index) => {
+            const name = item.name || item.key || `参数${index + 1}`
+
+            return {
+              value: item.name || item.key || index,
+              label: `${name} (${item.type || 'String'})`
+            }
+          })
+        }
+      }).filter(node => node.children.length)
     },
     outputItem () {
       return this.form.output[0] || {
@@ -194,11 +312,17 @@ export default {
     addParam () {
       this.form.data.push(createInputParameter())
     },
+    addOutputParam () {
+      this.form.output.push(createOutputParameter())
+    },
     removeParam (index) {
       this.form.data.splice(index, 1)
     },
+    removeOutputParam (index) {
+      this.form.output.splice(index, 1)
+    },
     getReferenceParamName (referenceValue) {
-      return Array.isArray(referenceValue) ? referenceValue[1] || '' : ''
+      return Array.isArray(referenceValue) ? referenceValue[referenceValue.length - 1] || '' : ''
     },
     handleReferenceChange (referenceValue, item) {
       console.log('change了')
@@ -228,6 +352,7 @@ export default {
     },
     save () {
       const hasEmptyName = this.form.data.some(item => !item.name?.trim())
+      const hasEmptyOutputName = this.form.output.some(item => !item.name?.trim())
       const hasEmptyValue = this.form.data.some(item => {
         return item.valueType === 'reference'
           ? !Array.isArray(item.referenceValue) || item.referenceValue.length < 2
@@ -242,6 +367,10 @@ export default {
         this.$message.warning('请输入完整的参数名称')
         return
       }
+      if (hasEmptyOutputName) {
+        this.$message.warning('请输入完整的输出参数名称')
+        return
+      }
       if (hasEmptyValue) {
         this.$message.warning('请填写参数值或选择引用参数')
         return
@@ -252,13 +381,42 @@ export default {
         item.referenceKey = item.valueType === 'reference' ? [...item.referenceValue] : []
         if (item.valueType === 'reference') item.inputValue = ''
       })
-      this.syncOutput(this.form.config.outputFormat)
       this.$emit('saveEditData', clone(this.form))
+    },
+    handleUserPromptInput (value) {
+      const el = this.$refs.inputRef.$refs.textarea
+
+      const cursor = el.selectionStart
+
+      if (value.slice(0, cursor).slice(-1).includes('/')) {
+        console.log('用户输入了/,', this.upperParamOptions, this.form.data)
+        this.showVariablePanel = true
+      } else {
+        this.showVariablePanel = false
+      }
+    },
+    insertVariable (item) {
+      const el = this.$refs.inputRef.$refs.textarea
+      const cursor = el.selectionStart
+
+      const before = this.form.config.userPrompt.slice(0, cursor)
+      const after = this.form.config.userPrompt.slice(cursor)
+      const hasTrigger = before.endsWith('/')
+      const contentBeforeTrigger = hasTrigger ? before.slice(0, -1) : before
+      const variableText = `{{${item.name}}}`
+
+      this.form.config.userPrompt = contentBeforeTrigger + variableText + after
+
+      this.showVariablePanel = false
+
+      this.$nextTick(() => {
+        const nextCursor = contentBeforeTrigger.length + variableText.length
+        el.focus()
+        el.setSelectionRange(nextCursor, nextCursor)
+      })
     }
   },
-  created () {
-    this.syncOutput(this.form.config.outputFormat)
-  },
+  created () {},
   mounted () {}
 }
 </script>
@@ -278,7 +436,52 @@ export default {
   > span { color: #3b3f50; font-size: 14px; font-weight: 600; }
   small { color: #a3a7b6; font-size: 11px; }
 }
-.setting-card { padding: 15px; border: 1px solid #e4e7ef; border-radius: 10px; background: #fafbfe; transition: border-color .2s ease, box-shadow .2s ease; }
+.setting-card { position: relative; padding: 15px; border: 1px solid #e4e7ef; border-radius: 10px; background: #fafbfe; transition: border-color .2s ease, box-shadow .2s ease; }
+.variable-panel{
+  position: absolute;
+  z-index: 10;
+  right: 15px;
+  // bottom: 42px;
+  left: 15px;
+  max-height: 220px;
+  padding: 8px;
+  overflow-y: auto;
+  border: 1px solid #e1e4ed;
+  border-radius: 10px;
+  background-color: white;
+  box-shadow: 0 10px 28px rgba(39, 44, 70, .16);
+
+  &__title { padding: 5px 7px 8px; color: #8b90a1; font-size: 11px; }
+  &__empty { padding: 20px 8px; color: #a4a8b5; font-size: 12px; text-align: center; }
+}
+.variable-panel-item{
+  padding: 8px 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 7px;
+  color: #343847;
+  cursor: pointer;
+  transition: color .2s ease, background .2s ease;
+
+  &__node {
+    max-width: 105px;
+    overflow: hidden;
+    color: #858a9b;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__info { min-width: 0; flex: 1; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  strong { overflow: hidden; font-size: 12px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+  em { padding: 2px 6px; border-radius: 4px; color: #6e63ce; background: #f0edff; font-size: 10px; font-style: normal; }
+
+  &:hover{
+    color: #4c67ff;
+    background: #f3f4ff;
+  }
+}
 .setting-card:hover { border-color: #c4b8eb; box-shadow: 0 5px 14px rgba(91, 68, 153, .08); }
 .basic-card { display: grid; grid-template-columns: minmax(0, 1fr) 155px; gap: 10px; }
 .parameter-fields { display: grid; grid-template-columns: minmax(0, 1fr) 145px; gap: 10px; }

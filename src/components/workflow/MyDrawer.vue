@@ -41,6 +41,22 @@
         @saveEditData='saveEditData'
         :inComingParams="inComingParams"
       ></model-node-edit>
+      <http-node-edit
+        v-if="nodeType === 'http-node'"
+        :editData="editData"
+        :nodeId="editNodeId"
+        :inComingParams="inComingParams"
+        @handleCancel="handleCancel"
+        @saveEditData="saveEditData"
+      >
+      </http-node-edit>
+      <if-else-node-edit
+        v-if="nodeType === 'if-else-node'"
+        :editData="editData"
+        :inComingParams="inComingParams"
+        @handleCancel="handleCancel"
+        @saveEditData="saveEditData"
+      />
     </div>
   </el-drawer>
 </template>
@@ -50,13 +66,17 @@ import startNodeEdit from './start-node/start-node-edit.vue'
 import endNodeEdit from './end-node/end-node-edit.vue'
 import inputNodeEdit from './input-node/input-node-edit.vue'
 import modelNodeEdit from './model-node/model-node-edit.vue'
+import httpNodeEdit from './http-node/http-node-edit.vue'
+import ifElseNodeEdit from './if-else-node/if-else-node-edit.vue'
 
 export default {
   components: {
     startNodeEdit,
     endNodeEdit,
     inputNodeEdit,
-    modelNodeEdit
+    modelNodeEdit,
+    httpNodeEdit,
+    ifElseNodeEdit
   },
   props: {
   },
@@ -75,6 +95,8 @@ export default {
   computed: {},
   methods: {
     handleOpen (data, instance) {
+      console.log('open data:', data)
+
       this.inComingParams = null
 
       this.isShowDrawer = true
@@ -82,7 +104,7 @@ export default {
       this.nodeType = data.data.type
       this.instance = instance
 
-      if (this.nodeType === 'model-node' || this.nodeType === 'end-node') {
+      if (this.nodeType === 'model-node' || this.nodeType === 'end-node' || this.nodeType === 'http-node' || this.nodeType === 'if-else-node') {
         this.editData = data.data.properties
       } else {
         this.editData = data.data.properties.data
@@ -124,7 +146,7 @@ export default {
         visited?.add(item.id)
         // 根据你的节点结构，提取需要作为引用参数的数据
         // const output = item.properties?.output || item.properties?.data || []
-        const output = item.type === 'model-node' ? item.properties?.output : item.properties?.data
+        const output = item.type === 'model-node' || item.type === 'http-node' ? item.properties?.output : item.properties?.data
 
         params.push({
           nodeId: item.id,

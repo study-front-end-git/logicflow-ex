@@ -16,6 +16,26 @@ const createParameter = (overrides = {}) => ({
   ...overrides
 })
 
+const createConditionOperand = (overrides = {}) => ({
+  type: 'String',
+  valueType: 'input',
+  inputValue: '',
+  referenceKey: [],
+  referenceValue: [],
+  ...overrides
+})
+
+const createIfElseCondition = (overrides = {}) => ({
+  id: UUID.generate(),
+  enabled: true,
+  left: createConditionOperand({
+    valueType: 'reference'
+  }),
+  operator: 'equals',
+  right: createConditionOperand(),
+  ...overrides
+})
+
 const NODE_PROPERTY_FACTORIES = {
   'start-node': () => ({
     description: '工作流的起始节点，用于定义工作流输入',
@@ -92,6 +112,68 @@ const NODE_PROPERTY_FACTORIES = {
       maxTokens: 2048,
       outputFormat: 'text'
     }
+  }),
+  'http-node': () => ({
+    title: 'HTTP 请求',
+    description: '',
+    pluginName: '',
+
+    data: [
+
+    ],
+
+    config: {
+      url: '',
+      method: 'GET',
+      headers: [
+
+      ],
+      query: [
+
+      ],
+      pathParams: [],
+      body: {
+        type: 'none',
+        value: null
+      },
+      timeout: 120000,
+      credentialId: '',
+      responseType: 'json'
+    },
+
+    output: []
+  }),
+
+  'if-else-node': () => ({
+    title: 'IF/ELSE',
+    description: '根据条件判断结果选择后续执行分支',
+
+    // IF/ELSE 节点只负责分流，不产生新的业务输出。
+    data: [],
+    output: [],
+
+    config: {
+      // 多条条件之间的关系：and | or
+      logic: 'and',
+      conditions: [
+        createIfElseCondition()
+      ]
+    },
+
+    branches: [
+      {
+        id: 'if',
+        name: 'IF',
+        description: '满足条件时执行',
+        anchorSuffix: '_1'
+      },
+      {
+        id: 'else',
+        name: 'ELSE',
+        description: '不满足条件时执行',
+        anchorSuffix: '_2'
+      }
+    ]
   })
 }
 

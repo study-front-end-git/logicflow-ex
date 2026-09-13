@@ -40,7 +40,7 @@
         </el-radio-group>
       </section>
 
-      <section v-if="form.outputMode === 'variable'" class="editor-section input-section">
+      <section class="editor-section input-section">
         <div class="input-section__title">
           <i class="el-icon-arrow-down"></i>
           <span>输出</span>
@@ -106,20 +106,41 @@
         </button>
       </section>
 
-      <section v-else class="text-output-section">
+      <section v-if="form.outputMode !== 'variable'" class="text-output-section">
         <div class="section-title">
           <span>返回文本</span>
           <small>支持填写固定文本或工作流结果说明</small>
         </div>
         <el-input
+          @input="handleInput"
           v-model="form.cueWord"
+          ref="textarea"
           type="textarea"
-          :rows="8"
-          maxlength="2000"
-          show-word-limit
+          :rows="5"
           resize="none"
           placeholder="请输入工作流结束时返回的文本"
         />
+        <div v-if="showVariablePanel" class="variable-panel">
+          <div class="variable-panel__title">选择上游变量</div>
+          <div
+            v-for="item in variables"
+            :key="`${item.nodeId}-${item.paramId}`"
+            class="variable-panel-item"
+            @mousedown.prevent
+            @click="insertVariable(item)"
+          >
+            <span class="variable-panel-item__node">{{ item.nodeTitle }}</span>
+            <span class="variable-panel-item__info">
+              <strong>{{ item.name }}</strong>
+              <em>{{ item.type }}</em>
+            </span>
+          </div>
+          <div v-if="variables.length === 0" class="variable-panel__empty">暂无可引用的上游变量</div>
+        </div>
+        <div class="variable-tip">
+          <i class="el-icon-connection"></i>
+          <span>输入“/”可以选择上游节点变量</span>
+        </div>
       </section>
     </div>
 
@@ -167,11 +188,26 @@ export default {
     })
 
     return {
-      form
+      form,
+      showVariablePanel: false
     }
   },
   watch: {},
   computed: {
+    variables () {
+      return (this.inComingParams || []).flatMap(node => {
+        const output = Array.isArray(node.output) ? node.output : []
+
+        return output.map((item, index) => ({
+          nodeId: node.nodeId,
+          nodeType: node.nodeType,
+          nodeTitle: node.title || node.nodeType || '上游节点',
+          paramId: item.id || `${node.nodeId}-${index}`,
+          name: item.name || item.key || `参数${index + 1}`,
+          type: item.type || 'String'
+        }))
+      })
+    },
     upperParamOptions () {
       return (this.inComingParams || []).map(node => ({
         value: node.nodeId,
@@ -250,6 +286,34 @@ export default {
       })
 
       this.$emit('saveEditData', clone(this.form))
+    },
+    handleInput (value) {
+      const el = this.$refs.textarea.$refs.textarea
+
+      const cursor = el.selectionStart
+
+      if (value.slice(0, cursor).slice(-1).includes('/')) {
+        this.showVariablePanel = true
+      } else {
+        this.showVariablePanel = false
+      }
+    },
+    insertVariable (item) {
+      const el = this.$refs.textarea.$refs.textarea
+      const cursor = el.selectionStart
+      const before = this.form.cueWord.slice(0, cursor)
+      const after = this.form.cueWord.slice(cursor)
+      const contentBeforeTrigger = before.endsWith('/') ? before.slice(0, -1) : before
+      const variableText = `/${item.nodeType}.${item.name}`
+
+      this.form.cueWord = contentBeforeTrigger + variableText + after
+      this.showVariablePanel = false
+
+      this.$nextTick(() => {
+        const nextCursor = contentBeforeTrigger.length + variableText.length
+        el.focus()
+        el.setSelectionRange(nextCursor, nextCursor)
+      })
     }
   },
   created () {},
@@ -299,11 +363,104 @@ export default {
   border-bottom: 1px solid #eceef4;
 }
 .text-output-section {
+  position: relative;
   margin-top: 20px;
   padding: 16px;
   border: 1px solid #e4e7ef;
   border-radius: 10px;
   background: #fafbfe;
+}
+
+.variable-panel {
+  position: absolute;
+  z-index: 20;
+  top: 116px;
+  right: 16px;
+  left: 16px;
+  max-height: 220px;
+  padding: 8px;
+  overflow-y: auto;
+  border: 1px solid #e1e4ed;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(39, 44, 70, .16);
+
+  &__title {
+    padding: 5px 7px 8px;
+    color: #8b90a1;
+    font-size: 11px;
+  }
+
+  &__empty {
+    padding: 20px 8px;
+    color: #a4a8b5;
+    font-size: 12px;
+    text-align: center;
+  }
+}
+
+.variable-panel-item {
+  padding: 8px 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 7px;
+  color: #343847;
+  cursor: pointer;
+  transition: color .2s ease, background .2s ease;
+
+  &__node {
+    max-width: 105px;
+    overflow: hidden;
+    color: #858a9b;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__info {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  strong {
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  em {
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #6e63ce;
+    background: #f0edff;
+    font-size: 10px;
+    font-style: normal;
+  }
+
+  &:hover {
+    color: #4c67ff;
+    background: #f3f4ff;
+  }
+}
+
+.variable-tip {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #8f95a6;
+  font-size: 10px;
+
+  i {
+    color: #795ad4;
+  }
 }
 
 .section-title {
