@@ -146,7 +146,7 @@
         </button>
       </section>
 
-      <!-- <section class="editor-section editor-section--last">
+      <section class="editor-section editor-section--last">
         <div class="section-title"><span>生成参数</span><small>调整模型输出效果</small></div>
         <div class="setting-card model-settings">
           <div class="slider-field">
@@ -171,7 +171,7 @@
           <div><strong>{{ outputItem.name }}</strong><small>{{ form.config.outputFormat === 'json' ? '模型生成的 JSON 对象' : '模型生成的文本内容' }}</small></div>
           <span class="output-preview__type">{{ outputItem.shortLabel }}</span>
         </div>
-      </section> -->
+      </section>
     </div>
 
     <div class="editor-footer"><el-button @click="handleCancel">取消</el-button><el-button type="primary" @click="save">保存配置</el-button></div>
@@ -223,7 +223,7 @@ export default {
       systemPrompt: '',
       userPrompt: form.config?.prompt || '',
       temperature: 0.7,
-      maxTokens: 2048,
+      maxTokens: 8192,
       outputFormat: form.output?.[0]?.format || 'text',
       ...(form.config || {})
     }

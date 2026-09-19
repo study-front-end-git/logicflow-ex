@@ -12,14 +12,37 @@
       <span class="http-node__title" :title="nodeTitle">{{ nodeTitle }}</span>
 
       <div class="http-node__actions">
-        <button class="http-node__run" type="button" aria-label="运行节点">
+        <el-popover
+          placement="top-start"
+          trigger="hover"
+          content="测试该节点">
+          <button @click.stop="openEditor" slot="reference" class="http-node__run" type="button" aria-label="运行节点">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m8 5 11 7-11 7V5Z" />
+            </svg>
+          </button>
+        </el-popover>
+
+        <!-- <button class="http-node__run" type="button" aria-label="运行节点">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m8 5 11 7-11 7V5Z" />
           </svg>
-        </button>
-        <button class="http-node__more" type="button" aria-label="更多操作">
+        </button> -->
+<!--
+        <el-dropdown @command="handleCommand">
+          <button class="http-node__more" type="button" aria-label="更多操作">
+            <span></span><span></span><span></span>
+          </button>
+          <el-dropdown-menu slot="dropdown">
+            <el-dropdown-item command="delete">删除</el-dropdown-item>
+
+          </el-dropdown-menu>
+        </el-dropdown> -->
+        <command-delete bgColor="#eaf7f2" color="#218d6c" :eventCenter="graphModel.eventCenter" :id="model.id"></command-delete>
+
+        <!-- <button class="http-node__more" type="button" aria-label="更多操作">
           <span></span><span></span><span></span>
-        </button>
+        </button> -->
       </div>
     </div>
 
@@ -36,8 +59,12 @@
 </template>
 
 <script>
+import CommandDelete from '@/components/CommandDelete.vue'
+
 export default {
-  components: {},
+  components: {
+    CommandDelete
+  },
   props: [
     'graphModel',
     'model',
@@ -47,7 +74,7 @@ export default {
     const properties = this.model?.properties || {}
     return {
       nodeTitle: properties.title || this.model?.title || this.title || 'HTTP 请求',
-      url: properties.config?.url || properties.url || '',
+      url: properties.config?.url,
       description: properties.description || ''
     }
   },
@@ -69,7 +96,18 @@ export default {
     //   return properties.description || properties.config?.description || data.description || ''
     // }
   },
-  methods: {},
+  methods: {
+    openEditor () {
+      this.graphModel.eventCenter.emit('open-node-editor', {
+        id: this.model.id
+      })
+    },
+    handleCommand (val) {
+      if (val === 'delete') {
+        this.graphModel.eventCenter.emit('delete-node', { id: this.model.id })
+      }
+    }
+  },
   created () {},
   mounted () {
     this.graphModel.eventCenter.on('save', ({ data, id, lf }) => {

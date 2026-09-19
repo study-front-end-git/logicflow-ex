@@ -1,6 +1,18 @@
 import request from '../request'
 
 export default {
+  getWorkflowList () {
+    return request.get('/workflows')
+  },
+
+  createWorkflow (data) {
+    return request.post('/workflows', data)
+  },
+
+  deleteWorkflow (id) {
+    return request.delete(`/workflows/${encodeURIComponent(id)}`)
+  },
+
   saveNodeData (id, data) {
     return request.put(`/workflows/${id}`, data)
   },
@@ -35,6 +47,14 @@ export default {
 
   getLatestHttpNodeTestRun (id, nodeId) {
     return request.get(`/workflows/${id}/http-nodes/${encodeURIComponent(nodeId)}/test-runs/latest`)
+  },
+
+  getAll () {
+    return request.get('/workflows')
+  },
+
+  addWorkflow (data) {
+    return request.post('/workflows', data)
   }
 
 }

@@ -9,18 +9,27 @@
       </span>
       <span class="model-node__title">{{ model.title ? model.title : title }}</span>
       <div class="model-node__actions">
-        <button class="model-node__run" type="button" aria-label="运行节点">
+        <div></div>
+        <!-- <button class="model-node__run" type="button" aria-label="运行节点">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 5 11 7-11 7V5Z" /></svg>
-        </button>
-        <button class="model-node__more" type="button" aria-label="更多操作"><span></span><span></span><span></span></button>
+        </button> -->
+        <command-delete bgColor="#f1edfb" color="#795ad4" :eventCenter="graphModel.eventCenter" :id="model.id"></command-delete>
+
+        <!-- <button class="model-node__more" type="button" aria-label="更多操作"><span></span><span></span><span></span></button> -->
       </div>
     </div>
     <div class="model-node__body">
       <div class="model-node__port">
         <span class="model-node__label">输入</span>
         <span v-for="item in nodeData" :key="item.id" class="model-node__param">
-          <span class="model-node__param-type">{{ item.shortLabel }}.</span>
-          <span class="model-node__param-name">{{ item.name }}</span>
+          <el-tooltip :content="item.type" placement="top" effect="light">
+            <div>
+              <span class="model-node__param-type">{{ item.shortLabel }}.</span>
+              <span class="model-node__param-name">{{ item.name }}</span>
+            </div>
+          </el-tooltip>
+          <!-- <span class="model-node__param-type">{{ item.shortLabel }}.</span>
+          <span class="model-node__param-name">{{ item.name }}</span> -->
         </span>
       </div>
 
@@ -36,8 +45,12 @@
 </template>
 
 <script>
+import CommandDelete from '@/components/CommandDelete.vue'
+
 export default {
-  components: {},
+  components: {
+    CommandDelete
+  },
   props: [
     'graphModel',
     'model',

@@ -11,17 +11,20 @@
       <span class="input-node__title">{{ model.title ? model.title : title }}</span>
 
       <div class="input-node__actions">
-        <button class="input-node__run" type="button" aria-label="运行节点">
+        <!-- <button class="input-node__run" type="button" aria-label="运行节点">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m8 5 11 7-11 7V5Z" />
           </svg>
-        </button>
+        </button> -->
+        <div></div>
 
-        <button class="input-node__more" type="button" aria-label="更多操作">
+        <!-- <button class="input-node__more" type="button" aria-label="更多操作">
           <span></span>
           <span></span>
           <span></span>
-        </button>
+        </button> -->
+
+        <command-delete bg-color="#f0f1f8" color="#5962dc" :eventCenter="graphModel.eventCenter" :id="model.id"></command-delete>
       </div>
     </div>
 
@@ -40,8 +43,12 @@
 </template>
 
 <script>
+import CommandDelete from '@/components/CommandDelete.vue'
+
 export default {
-  components: {},
+  components: {
+    CommandDelete
+  },
   props: [
     'graphModel',
     'model',

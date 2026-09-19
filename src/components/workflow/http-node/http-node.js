@@ -61,7 +61,7 @@ class VueNodeModel extends HtmlNodeModel {
   getNodeStyle () {
     const style = super.getNodeStyle()
     if (this.properties.active) {
-      style.stroke = '#aab1ee'
+      style.stroke = '#55b99a'
       // style.strokeWidth = 3
     }
     return style
@@ -80,10 +80,7 @@ class VueNode extends HtmlNode {
         },
         model: {
           id: this.props.model.id,
-          title: this.props.model.properties?.title || 'http',
-          properties: {
-            data: this.props.model.properties?.data || []
-          }
+          properties: this.props.model.properties || {}
         }
       }
     })

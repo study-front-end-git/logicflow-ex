@@ -25,17 +25,35 @@
             :class="{ 'param--warning': !item.name || !item.type }"
             :title="item.type"
           >
-            <span class="param__type">{{ item.shortLabel || getShortLabel(item.type) }}</span>
-            <span class="param__name">{{ item.name || '未定义' }}</span>
+            <!-- <el-popover
+              width="60"
+              placement="top"
+              trigger="hover"
+              :content="item.type">
+              <template slot="reference">
+                <span class="param__type">{{ item.shortLabel || getShortLabel(item.type) }}</span>.
+                <span class="param__name">{{ item.name || '未定义' }}</span>
+
+              </template>
+            </el-popover> -->
+            <el-tooltip :content="item.type" placement="top" effect="light">
+              <div>
+                <span class="param__type">{{ item.shortLabel || getShortLabel(item.type) }}</span>.
+                <span class="param__name">{{ item.name || '未定义' }}</span>
+
+              </div>
+            </el-tooltip>
+            <!-- <span class="param__type">{{ item.shortLabel || getShortLabel(item.type) }}</span>
+            <span class="param__name">{{ item.name || '未定义' }}</span> -->
           </span>
         </template>
       </div>
 
-      <button @click="handleShowMore" class="start-node__more" type="button" aria-label="更多参数">
+      <!-- <button @click="handleShowMore" class="start-node__more" type="button" aria-label="更多参数">
         <span></span>
         <span></span>
         <span></span>
-      </button>
+      </button> -->
     </div>
   </div>
 </template>

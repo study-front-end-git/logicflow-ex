@@ -1,11 +1,11 @@
 import { HtmlNode, HtmlNodeModel } from '@logicflow/core'
 import Vue from 'vue'
-import modelNode from './model-node.vue'
+import outputNode from './output-node.vue'
 
 class VueNodeModel extends HtmlNodeModel {
   setAttributes () {
     this.width = 300
-    this.height = 85
+    this.height = 100
 
     // this.targetRules = []
     // this.anchorsOffset = [[150, 40]]
@@ -28,7 +28,7 @@ class VueNodeModel extends HtmlNodeModel {
     return style
   }
 
-  // 定义连线规则
+  // 定义连线规则 getConnectedTargetRules getConnectedSourceRules
   // getConnectedTargetRules () {
   //   const rules = super.getConnectedTargetRules()
   //   const notAsTarget = {
@@ -61,7 +61,7 @@ class VueNodeModel extends HtmlNodeModel {
   getNodeStyle () {
     const style = super.getNodeStyle()
     if (this.properties.active) {
-      style.stroke = '#a791ef'
+      style.stroke = '#aab1ee'
       // style.strokeWidth = 3
     }
     return style
@@ -70,35 +70,33 @@ class VueNodeModel extends HtmlNodeModel {
 
 class VueNode extends HtmlNode {
   setHtml (root) {
-    const VueComponent = Vue.extend(modelNode)
-    const ModelVueInstance = new VueComponent({
+    const VueComponent = Vue.extend(outputNode)
+    const InputVueInstance = new VueComponent({
       propsData: {
-        title: '大模型',
+        title: '输出',
         // data: safeProperties,
         graphModel: {
           eventCenter: this.props.graphModel.eventCenter
         },
         model: {
           id: this.props.model.id,
-          title: this.props.model.properties?.title || '大模型',
-          properties: {
-            data: this.props.model.properties?.data || [],
-            output: this.props.model.properties?.output || [],
-            config: this.props.model.properties?.config || {}
-          }
+          title: this.props.model.properties?.title || '输出',
 
+          properties: {
+            data: this.props.model.properties?.data || []
+          }
         }
       }
     })
 
-    ModelVueInstance.$mount()
+    InputVueInstance.$mount()
 
-    root.appendChild(ModelVueInstance.$el)
+    root.appendChild(InputVueInstance.$el)
   }
 }
 
 export default {
-  type: 'model-node',
+  type: 'output-node',
   view: VueNode,
   model: VueNodeModel
 }

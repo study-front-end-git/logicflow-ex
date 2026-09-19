@@ -11,10 +11,11 @@
 
       <div class="workflow-header__info">
         <div class="workflow-header__name-row">
-          <strong>{{ name }}</strong>
-          <i class="el-icon-info workflow-header__info-icon"></i>
-          <span class="workflow-header__status-dot"><i class="el-icon-check"></i></span>
-          <button class="rename-button" type="button" aria-label="修改名称" @click="$emit('rename')">
+          <strong v-if="!isShowInput">{{ name }}</strong>
+          <el-input size="mini" @blur="handleBlur" v-else ref="inputRef" v-model="inputVal" placeholder="请输入内容"></el-input>
+          <!-- <i class="el-icon-info workflow-header__info-icon"></i> -->
+          <!-- <span class="workflow-header__status-dot"><i class="el-icon-check"></i></span> -->
+          <button class="rename-button" type="button" aria-label="修改名称" @click="handleChangeName">
             <i class="el-icon-edit-outline"></i>
           </button>
         </div>
@@ -69,6 +70,30 @@ export default {
     hasUnpublishedChanges: {
       type: Boolean,
       default: true
+    }
+  },
+  data () {
+    return {
+      isShowInput: false,
+      inputVal: this.name
+    }
+  },
+  methods: {
+    handleChangeName () {
+      // this.$emit('rename')
+      this.isShowInput = true
+
+      this.$nextTick(() => {
+        this.$refs.inputRef.focus()
+      })
+      // this.$refs.inputRef.focus()
+    },
+    handleBlur () {
+      this.isShowInput = false
+      this.$emit('rename', this.inputVal)
+    },
+    changeVal (value) {
+      this.inputVal = value.trim()
     }
   }
 }

@@ -3,24 +3,30 @@
     <header class="header">
       <div>
         <p class="header__eyebrow">WORKSPACE</p>
-        <h1>智能体中心</h1>
-        <p class="header__description">选择一个智能体，快速开始你的工作</p>
+        <h1>工作流</h1>
+        <p class="header__description">来创建一个工作流</p>
       </div>
-      <button class="header__create" type="button">
+      <button @click="dialogVisible = true" class="header__create" type="button">
         <span>＋</span>
-        创建智能体
+        创建工作流
       </button>
     </header>
 
-    <main class="main">
-      <article v-for="agent in agents" @click="handleClick(agent)" :key="agent.id" class="item">
-        <div class="item__content">
+    <main v-loading="loading" class="main">
+      <article v-for="agent in agents" :key="agent.id" class="item">
+        <div  @click="handleClick(agent)"  class="item__content">
           <div class="item__heading">
             <h2>{{ agent.name }}</h2>
-            <span class="item__verified" title="已认证">✓</span>
+            <span
+              class="item__status"
+              :class="{ 'item__status--published': agent.status === 1 }"
+            >
+              {{ getStatusText(agent.status) }}
+            </span>
+            <!-- <span class="item__version">v{{ agent.version }}</span> -->
           </div>
-          <p class="item__description">{{ agent.description }}</p>
-          <span class="item__tag">{{ agent.tag }}</span>
+          <p class="item__description">{{ agent.description || '暂无工作流描述' }}</p>
+          <!-- <span class="item__tag">{{ agent.tag }}</span> -->
         </div>
 
         <div class="item__cover" :style="{ '--cover-color': agent.color }">
@@ -37,43 +43,89 @@
                 <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 8a7 7 0 0 0-14 0h14Z" />
               </svg>
             </span>
-            <span>{{ agent.author }}</span>
+            <!-- <span>{{ agent.createdBy || '系统创建' }}</span> -->
             <i />
-            <span>最近编辑 {{ agent.updatedAt }}</span>
+            <span>最近编辑 {{ formatDate(agent.updatedAt) }}</span>
           </div>
           <div class="item__actions">
-            <button type="button" aria-label="收藏">
+            <!-- <button type="button" aria-label="收藏">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="m12 3 2.78 5.63 6.22.91-4.5 4.38 1.06 6.19L12 17.18l-5.56 2.93 1.06-6.19L3 9.54l6.22-.91L12 3Z" />
               </svg>
-            </button>
-            <button type="button" aria-label="更多操作">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="5" r="1.8" />
-                <circle cx="12" cy="12" r="1.8" />
-                <circle cx="12" cy="19" r="1.8" />
-              </svg>
-            </button>
+            </button> -->
+            <el-dropdown @command="handleCommand($event,agent)" trigger="click">
+              <button aria-label="更多操作">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <circle cx="12" cy="5" r="1.8" />
+                  <circle cx="12" cy="12" r="1.8" />
+                  <circle cx="12" cy="19" r="1.8" />
+                </svg>
+              </button>
+              <el-dropdown-menu slot="dropdown">
+                <el-dropdown-item command="delete">删除</el-dropdown-item>
+              </el-dropdown-menu>
+            </el-dropdown>
           </div>
         </footer>
       </article>
+
+      <div v-if="!loading && agents.length === 0" class="main__empty">
+        <span class="main__empty-icon">
+          <i></i><i></i><i></i>
+        </span>
+        <strong>暂无工作流</strong>
+        <p>创建一个工作流后，它会显示在这里</p>
+      </div>
     </main>
+
+    <el-dialog
+      title="新建workflow"
+      :visible.sync="dialogVisible"
+    >
+      <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+        <el-form-item label="活动名称" prop="name">
+          <el-input v-model="ruleForm.name"></el-input>
+        </el-form-item>
+        <el-form-item label="活动区域" prop="description">
+          <el-input v-model="ruleForm.description"></el-input>
+        </el-form-item>
+
+      </el-form>
+      <span slot="footer" class="dialog-footer">
+        <el-button @click="dialogVisible = false">取 消</el-button>
+        <el-button type="primary" :loading="isShowLoading" @click="addWorkflow">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
 <script>
+import { Message } from 'element-ui'
+
 export default {
   name: 'HomeView',
   data () {
     return {
-      agents: [
-        { id: 1, name: '文本总结助手', description: '根据病人描述病状推断出应该就诊科室', tag: '智能体', author: 'RootUser_2107908511', updatedAt: '07-20 10:42', color: '#8297bc' },
-        { id: 2, name: 'AI新闻预览', description: '根据主题和语气，快速生成高质量创意文案', tag: '内容创作', author: 'RootUser_2107908511', updatedAt: '07-19 16:28', color: '#947fbc' },
-        { id: 3, name: '智能翻译助手', description: '解析业务数据，发现趋势并生成分析结论', tag: '效率工具', author: 'RootUser_2107908511', updatedAt: '07-18 09:15', color: '#6d9d98' },
-        { id: 4, name: '学习规划助手', description: '结合你的目标，定制清晰可行的学习计划', tag: '教育', author: 'RootUser_2107908511', updatedAt: '07-17 14:06', color: '#bd8a72' },
-        { id: 5, name: '旅行规划助手', description: '一站式规划行程、景点与每日出行安排', tag: '生活', author: 'RootUser_2107908511', updatedAt: '07-16 11:30', color: '#718db0' },
-        { id: 6, name: '代码审查助手', description: '定位潜在问题，给出清晰可靠的优化建议', tag: '开发工具', author: 'RootUser_2107908511', updatedAt: '07-15 18:42', color: '#7c8ba4' }
-      ]
+      agents: [],
+      loading: false,
+      coverColors: ['#8297bc', '#947fbc', '#6d9d98', '#bd8a72', '#718db0', '#7c8ba4'],
+      dialogVisible: false,
+      ruleForm: {
+        name: '',
+        description: ''
+      },
+      rules: {
+        name: [
+          { required: true, message: '请输入名称', trigger: 'blur' },
+          { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
+        ],
+        description: [
+          { required: true, message: '请输入描述', trigger: 'blur' },
+          { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
+        ]
+      },
+      isShowLoading: false,
+      saveWorkflowId: ['1', '2', '3', '4', '5']
     }
   },
   methods: {
@@ -82,7 +134,93 @@ export default {
       this.$router.push({
         path: `/workflow/${item.id}/${item.name}`
       })
+    },
+    getStatusText (status) {
+      return Number(status) === 1 ? '已发布' : '草稿'
+    },
+    formatDate (value) {
+      if (!value) return '--'
+
+      const date = new Date(value)
+      if (Number.isNaN(date.getTime())) return value
+
+      return new Intl.DateTimeFormat('zh-CN', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).format(date)
+    },
+    async getAllFlows () {
+      this.loading = true
+
+      try {
+        const response = await this.$api.getAll()
+
+        if (response?.code !== 0 || !Array.isArray(response.data)) {
+          throw new Error(response?.message || response?.msg || '获取工作流列表失败')
+        }
+
+        this.agents = response.data.map((item, index) => ({
+          ...item,
+          color: this.coverColors[index % this.coverColors.length]
+        }))
+      } catch (error) {
+        this.agents = []
+        this.$message.error(error.message || '获取工作流列表失败')
+      } finally {
+        this.loading = false
+      }
+    },
+
+    handleCommand (value, agent) {
+      console.log('value:', value, agent)
+      if (value === 'delete') {
+        if (this.saveWorkflowId.includes(agent.id)) {
+          Message.warning('不可删除')
+        } else {
+          this.deleteWorkflow(agent.id)
+        }
+      }
+    },
+    async addWorkflow () {
+      console.log('this.form', this.ruleForm)
+
+      this.$refs.ruleForm.validate(async (valid) => {
+        if (valid) {
+          try {
+            this.isShowLoading = true
+            const res = await this.$api.addWorkflow(this.ruleForm)
+            console.log('res:', res)
+            if (res.code === 0) {
+              await this.getAllFlows()
+              Message.success('创建成功')
+            }
+          } finally {
+            this.isShowLoading = false
+            this.dialogVisible = false
+          }
+        } else {
+          Message.warning('请完整填写表单')
+          return false
+        }
+      })
+    },
+    async deleteWorkflow (id) {
+      const res = await this.$api.deleteWorkflow(id)
+      console.log('delete res:', res)
+      if (res.code === 0) {
+        Message.success('删除成功')
+        await this.getAllFlows()
+      } else {
+        Message.error(res.message)
+      }
     }
+
+  },
+  mounted () {
+    this.getAllFlows()
   }
 }
 </script>
@@ -173,17 +311,29 @@ export default {
       &__heading { display: flex; align-items: center; gap: 8px; }
       &__heading h2 { font-size: 19px; line-height: 28px; font-weight: 500; }
 
-      &__verified {
-        width: 18px;
-        height: 18px;
+      &__status {
+        height: 20px;
+        padding: 0 7px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 50%;
-        color: #18b964;
-        background: #dcfae9;
-        font-size: 12px;
-        font-weight: 700;
+        flex: 0 0 auto;
+        border-radius: 10px;
+        color: #8a6a22;
+        background: #fff4d8;
+        font-size: 10px;
+        font-weight: 600;
+
+        &--published {
+          color: #16864b;
+          background: #dcfae9;
+        }
+      }
+
+      &__version {
+        flex: 0 0 auto;
+        color: #a1a6b2;
+        font-size: 11px;
       }
 
       &__description {
@@ -295,6 +445,47 @@ export default {
         &:hover { transform: translateY(-2px); background: #f6f8fb; box-shadow: 0 5px 12px rgba(24, 32, 48, .09); }
         svg { width: 22px; height: 22px; fill: none; stroke: #11151c; stroke-width: 1.8; stroke-linejoin: round; }
         &:last-child svg { fill: #11151c; stroke: none; }
+      }
+    }
+
+    &__empty {
+      min-height: 260px;
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      color: #8f96a5;
+
+      strong {
+        margin-top: 14px;
+        color: #454b59;
+        font-size: 16px;
+        font-weight: 500;
+      }
+
+      p {
+        margin-top: 7px;
+        font-size: 13px;
+      }
+    }
+
+    &__empty-icon {
+      width: 58px;
+      height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      border-radius: 16px;
+      color: #8995ad;
+      background: #e9edf5;
+
+      i {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
       }
     }
   }

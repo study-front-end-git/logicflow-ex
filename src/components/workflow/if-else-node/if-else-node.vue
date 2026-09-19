@@ -13,7 +13,12 @@
         <span class="if-else-node__title" :title="nodeTitle">{{ nodeTitle }}</span>
         <span class="if-else-node__meta">{{ conditionSummary }}</span>
       </div>
-      <span class="if-else-node__badge">IF</span>
+        <!-- <button class="http-node__more" type="button" aria-label="更多操作">
+          <span></span><span></span><span></span>
+        </button> -->
+      <!-- <span class="if-else-node__badge">IF</span> -->
+      <command-delete bgColor="#fff1d8" color="#b26a12" :eventCenter="graphModel.eventCenter" :id="model.id"></command-delete>
+
     </div>
 
     <div class="if-else-node__body">
@@ -39,8 +44,13 @@
 </template>
 
 <script>
+import CommandDelete from '@/components/CommandDelete.vue'
+
 export default {
   props: ['graphModel', 'model', 'title'],
+  components: {
+    CommandDelete
+  },
   data () {
     const properties = this.model?.properties || {}
     return {

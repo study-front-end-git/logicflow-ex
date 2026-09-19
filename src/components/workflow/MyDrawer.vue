@@ -46,6 +46,7 @@
         :editData="editData"
         :nodeId="editNodeId"
         :inComingParams="inComingParams"
+        :isShowHttpNodeSlider="isShowHttpNodeSlider"
         @handleCancel="handleCancel"
         @saveEditData="saveEditData"
       >
@@ -57,6 +58,14 @@
         @handleCancel="handleCancel"
         @saveEditData="saveEditData"
       />
+      <output-node-edit
+        v-if="nodeType === 'output-node'"
+        :editData="editData"
+        :nodeId="editNodeId"
+        @handleCancel="handleCancel"
+        @saveEditData='saveEditData'
+        :inComingParams="inComingParams"
+      ></output-node-edit>
     </div>
   </el-drawer>
 </template>
@@ -68,6 +77,7 @@ import inputNodeEdit from './input-node/input-node-edit.vue'
 import modelNodeEdit from './model-node/model-node-edit.vue'
 import httpNodeEdit from './http-node/http-node-edit.vue'
 import ifElseNodeEdit from './if-else-node/if-else-node-edit.vue'
+import outputNodeEdit from './output-node/output-node-edit.vue'
 
 export default {
   components: {
@@ -76,7 +86,8 @@ export default {
     inputNodeEdit,
     modelNodeEdit,
     httpNodeEdit,
-    ifElseNodeEdit
+    ifElseNodeEdit,
+    outputNodeEdit
   },
   props: {
   },
@@ -88,29 +99,34 @@ export default {
       editNodeId: '',
       fullEditData: null,
       instance: null,
-      inComingParams: null
+      inComingParams: null,
+      isShowHttpNodeSlider: false
     }
   },
   watch: {},
   computed: {},
   methods: {
-    handleOpen (data, instance) {
+    handleOpen (data, instance, bool) {
       console.log('open data:', data)
 
       this.inComingParams = null
 
       this.isShowDrawer = true
       this.fullEditData = data
-      this.nodeType = data.data.type
+      this.nodeType = data.type
       this.instance = instance
 
-      if (this.nodeType === 'model-node' || this.nodeType === 'end-node' || this.nodeType === 'http-node' || this.nodeType === 'if-else-node') {
-        this.editData = data.data.properties
+      if (this.nodeType === 'model-node' || this.nodeType === 'end-node' || this.nodeType === 'output-node' || this.nodeType === 'http-node' || this.nodeType === 'if-else-node') {
+        if (this.nodeType === 'http-node') {
+          this.isShowHttpNodeSlider = bool
+          console.log('isShowHttpNodeSlider:', this.isShowHttpNodeSlider)
+        }
+        this.editData = data.properties
       } else {
-        this.editData = data.data.properties.data
+        this.editData = data.properties.data
       }
 
-      this.editNodeId = data.data.id
+      this.editNodeId = data.id
 
       this.inComingParams = this.formatUpperParams(this.editNodeId)
       console.log('得到的inComingParams：', this.inComingParams)

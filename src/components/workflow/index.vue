@@ -94,6 +94,7 @@
     <try-run-edit
       @tryRun="tryRun"
       :workflowId="workflowId"
+      :isLoading="isLoading"
       ref="tryRunRef"
     >
     </try-run-edit>
@@ -119,6 +120,8 @@ import { MiniMap, Snapshot } from '@logicflow/extension'
 import TryRunEdit from './TryRunEdit.vue'
 import httpNode from './http-node/http-node.js'
 import ifElseNode from './if-else-node/if-else-node.js'
+import outputNode from './output-node/output-node.js'
+import { Message } from 'element-ui'
 // import { saveNodeData } from '../../api/api.js'
 
 export default {
@@ -136,6 +139,7 @@ export default {
       clickNodeIdList: [],
       workflowId: this.$route.params.id,
       name: this.$route.params.name,
+      description: this.$route.params.name,
       nodeTypeList: { 'input-node': [], 'model-node': [] },
       ignoreNextNodeClick: false,
       sizeOptions: [
@@ -159,12 +163,17 @@ export default {
       ],
       currentSize: 1,
       isShowMiniMap: false,
-      version: null
+      version: null,
+      isLoading: false
     }
   },
   watch: {},
   computed: {},
   methods: {
+    setWorkflowName (name) {
+      this.name = name
+    },
+
     registerNode (instance) {
       instance.register(StartNode)
       instance.register(EndNode)
@@ -172,6 +181,7 @@ export default {
       instance.register(modelNode)
       instance.register(httpNode)
       instance.register(ifElseNode)
+      instance.register(outputNode)
     },
     async initRenderData (instance) {
       await this.getRenderData()
@@ -244,7 +254,7 @@ export default {
 
         const paramData = {
           name: this.name,
-          description: this.name,
+          description: this.description,
           graphData: this.renderData
         }
         this.putSaveNodeData(paramData)
@@ -254,8 +264,14 @@ export default {
       try {
         const response = await this.$api.getNodeData(this.workflowId)
 
-        this.renderData = response.data.graphData
+        const graphData = response.data.graphData
+        this.renderData = Array.isArray(graphData?.nodes) && graphData.nodes.length > 0
+          ? graphData
+          : null
         this.version = response.data.version
+        this.name = response.data.name || this.name
+        this.description = response.data.description ?? ''
+        this.$emit('workflow-loaded', response.data)
 
         console.log('读取到的画布：', this.renderData)
         console.log('当前版本：', this.version)
@@ -276,7 +292,7 @@ export default {
         }
         console.log('node data:', data)
 
-        this.$refs.myDrawer.handleOpen(data, instance)
+        this.$refs.myDrawer.handleOpen(data.data, instance, false)
 
         if (this.clickNodeIdList.length >= 1) {
           this.clickNodeIdList.forEach(item => {
@@ -287,6 +303,29 @@ export default {
         }
         const node = instance.getNodeModelById(data.data.id)
         this.clickNodeIdList.push(data.data.id)
+        console.log('node:', node)
+
+        node.setProperties({
+          active: true
+        })
+      })
+
+      instance.graphModel.eventCenter.on('open-node-editor', ({ id }) => {
+        const nodeModel = instance.getNodeModelById(id)
+        if (!nodeModel) return
+
+        const data = nodeModel.getData()
+        this.$refs.myDrawer.handleOpen(nodeModel.getData(), instance, true)
+
+        if (this.clickNodeIdList.length >= 1) {
+          this.clickNodeIdList.forEach(item => {
+            instance.getNodeModelById(item)?.setProperties({
+              active: false
+            })
+          })
+        }
+        const node = instance.getNodeModelById(data.id)
+        this.clickNodeIdList.push(data.id)
         console.log('node:', node)
 
         node.setProperties({
@@ -327,6 +366,10 @@ export default {
 
       instance.on('node:delete', (data) => {
         this.saveGraphData()
+      })
+
+      instance.graphModel.eventCenter.on('delete-node', ({ id }) => {
+        instance.deleteNode(id)
       })
 
       instance.on('edge:add', (data) => {
@@ -431,7 +474,8 @@ export default {
         'input-node': '输入',
         'model-node': '大模型',
         'http-node': 'http插件',
-        'if-else-node': 'if-else'
+        'if-else-node': 'if-else',
+        'output-node': '输出'
       }
 
       if (!titleMap[newType]) return
@@ -470,7 +514,7 @@ export default {
       }
     },
 
-    async saveGraphData () {
+    async saveGraphData ({ createVersion = false, changeNote = '' } = {}) {
       if (!this.lf) return
 
       console.log('param vresion:', this.version)
@@ -478,13 +522,20 @@ export default {
       const saveData = this.lf.getGraphData()
       const paramData = {
         name: this.name,
-        description: this.name,
+        description: this.description,
         graphData: saveData,
+        createVersion,
+        ...(changeNote ? { changeNote } : {}),
         ...(this.version !== null
           ? { version: this.version }
           : {})
       }
-      await this.putSaveNodeData(paramData)
+      const workflow = await this.putSaveNodeData(paramData)
+      this.$emit(createVersion ? 'version-saved' : 'draft-saved', workflow)
+      if (createVersion) {
+        Message.success(`工作流版本 v${workflow.version} 保存成功`)
+      }
+      return workflow
       // localStorage.setItem(`workflow${this.workflowId}`, JSON.stringify(saveData))
     },
 
@@ -543,18 +594,34 @@ export default {
       console.log('响应data:', data)
       this.version = data.data?.version
       console.log('this.verison:', this.version)
+      return data.data
     },
 
     async tryRun (runtimeData) {
       try {
+        Message.success('请求发送成功，请稍后')
+        this.isLoading = true
         this.$store.commit('getIsShowLoading', true)
         const data = await this.$api.tryRunModel(this.workflowId, runtimeData)
-        this.$store.commit('getRunTimeData', data)
+        if (data.code === 0) {
+          this.$store.commit('getRunTimeData', data)
+
+          const trace = data.data?.trace || data.trace || []
+          const branchNode = trace.find(item => item.nodeType === 'if-else-node')
+          const branchMessage = branchNode?.condition?.branch
+            ? `,进入的是${branchNode.condition.branch}分支`
+            : ''
+          Message.success(data.message + branchMessage)
+        } else {
+          Message.error(data.message ? data.message : '出错了')
+        }
+
         console.log('model run data:', data)
       } catch (error) {
         console.log(error)
       } finally {
         this.$store.commit('getIsShowLoading', false)
+        this.isLoading = false
       }
     }
 

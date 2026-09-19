@@ -255,7 +255,8 @@ export default {
   props: {
     editData: { type: Object, default: () => ({}) },
     nodeId: { type: String, required: true },
-    inComingParams: { type: Array, default: () => [] }
+    inComingParams: { type: Array, default: () => [] },
+    isShowHttpNodeSlider: Boolean
   },
   data () {
     return {
@@ -275,6 +276,18 @@ export default {
       outputOptions: [],
       isShowRunResLoading: false,
       testInputValues: {}
+    }
+  },
+  watch: {
+    isShowHttpNodeSlider: {
+      handler (newval) {
+        console.log('newval:', newval)
+
+        // if (newval) {
+        this.isShowSlider = newval
+        // }
+      },
+      immediate: true
     }
   },
   mounted () {
@@ -558,10 +571,11 @@ export default {
 .http-node-editor { ::v-deep .el-form-item { margin-bottom: 14px; } ::v-deep .el-form-item__label { padding-bottom: 4px; color: #777c8f; font-size: 12px; line-height: 18px; } ::v-deep .el-select, ::v-deep .el-cascader, ::v-deep .el-input-number { width: 100%; } ::v-deep .el-input__inner, ::v-deep .el-textarea__inner { border-color: #dfe2eb; border-radius: 7px; } ::v-deep .el-radio-button__inner { padding: 8px 9px; font-size: 10px; } ::v-deep .el-button--primary { border-color: #278f70; background: #278f70; } }
 .slider {
   position: absolute;
+  width: 100%;
   z-index: 30;
-  right: -22px;
+  right: 0;
   bottom: 0;
-  left: -22px;
+  // left: -22px;
   min-height: 250px;
   max-height: 500px;
   display: flex;

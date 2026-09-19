@@ -12,15 +12,10 @@
         <div class="node-library__list" >
           <div v-for="item in listData" :key="item.id" >
             <div draggable="true" @dragstart="dragstart" @dragend="dragend" class="node-item" :data-node-type="item.type">
-              <span  class="node-item__icon node-item__icon--input">
-                <div :v-html="item.html">
-
-                </div>
-                <!-- <svg viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M14.5 6.5 9 12l5.5 5.5" />
-                  <path d="M9.5 12H20" />
-                </svg> -->
-              </span>
+              <span
+                class="node-item__icon node-item__icon--input"
+                v-html="item.html"
+              ></span>
               <span class="node-item__content">
                 <strong>{{ item.name }}</strong>
                 <small>{{ item.intro }}</small>
@@ -119,13 +114,27 @@ export default {
           type: 'if-else-node',
           html: `
             <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="5" cy="12" r="2" />
+              <circle cx="19" cy="6" r="2" />
+              <circle cx="19" cy="18" r="2" />
+              <path d="M7 12h3.5c3.2 0 3.2-6 6.5-6M10.5 12c3.2 0 3.2 6 6.5 6" />
+            </svg>
+          `,
+          name: 'if-else',
+          intro: '添加条件判断'
+        },
+        {
+          id: UUID.generate(),
+          type: 'output-node',
+          html: `
+            <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M9.5 14.5 14.5 9" />
               <path d="m7.2 17.7-1 .9a3.7 3.7 0 0 1-5.2-5.2l3.1-3.1a3.7 3.7 0 0 1 5.2 0" />
               <path d="m16.8 6.3 1-.9a3.7 3.7 0 0 1 5.2 5.2l-3.1 3.1a3.7 3.7 0 0 1-5.2 0" />
             </svg>
           `,
-          name: 'if-else',
-          intro: '添加条件判断'
+          name: '输出',
+          intro: '输出结果'
         }
       ],
       dragItemType: null
@@ -293,9 +302,10 @@ export default {
       letter-spacing: 1px;
     }
 
-    svg {
+    ::v-deep svg {
       width: 20px;
       height: 20px;
+      display: block;
       fill: none;
       stroke: currentColor;
       stroke-width: 2;

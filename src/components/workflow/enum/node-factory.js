@@ -174,6 +174,25 @@ const NODE_PROPERTY_FACTORIES = {
         anchorSuffix: '_2'
       }
     ]
+  }),
+
+  'output-node': () => ({
+    description: '工作流的输出节点',
+    // outputMode: 'variable',
+    // isCustomReply: false,
+    data: [
+      {
+        id: UUID.generate(),
+        name: 'output',
+        type: 'String',
+        shortLabel: 'Str',
+        valueType: 'input',
+        inputValue: '',
+        referenceKey: [],
+        referenceValue: []
+      }
+    ],
+    cueWord: ''
   })
 }
 

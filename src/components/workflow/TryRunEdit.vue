@@ -42,7 +42,7 @@
         </div>
       </section>
 
-      <section v-if="outputContent !== ''" class="run-result">
+      <section class="run-result">
         <el-collapse accordion>
           <el-collapse-item
 
@@ -81,7 +81,7 @@
       </section>
 
       <div class="editor-footer">
-        <el-button type="primary" @click="handleTryRun">试运行</el-button>
+        <el-button type="primary" :loading="isLoading" @click="handleTryRun">试运行</el-button>
       </div>
     </div>
 
@@ -111,7 +111,8 @@ export default {
     CopyCom
   },
   props: {
-    workflowId: String
+    workflowId: String,
+    isLoading: Boolean
   },
   data () {
     return {
@@ -135,6 +136,7 @@ export default {
       },
       deep: true
     }
+    // isEdit(newavl){}
     // isShowLoading (newval) {
     //   this.isShowLoading = newval
     // }

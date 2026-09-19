@@ -67,7 +67,7 @@ class VueNodeModel extends HtmlNodeModel {
   getNodeStyle () {
     const style = super.getNodeStyle()
     if (this.properties.active) {
-      style.stroke = '#aab1ee'
+      style.stroke = '#e0a64b'
       // style.strokeWidth = 3
     }
     return style
