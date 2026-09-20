@@ -3,7 +3,7 @@ import { Message } from 'element-ui'
 
 // 创建实例
 const instance = axios.create({
-  baseURL: process.env.VUE_API_URL,
+  baseURL: process.env.VUE_APP_API_URL,
   timeout: 120000, // 毫秒
   headers: {
     'Content-Type': 'application/json'
